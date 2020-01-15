@@ -3,8 +3,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Person {
-    Long chatId;
-    Map<String, ArrayList<Transaction>> relationships = new HashMap<>();
+    private Long chatId;
+    private Map<String, ArrayList<Transaction>> relationships = new HashMap<>();
 
     Person(Long chatId) {
         this.chatId = chatId;

@@ -1,6 +1,6 @@
 public class Transaction {
-    float sum;
-    String comment;
+    private float sum;
+    private String comment;
 
     Transaction(float sum, String comment) {
         this.sum = sum;
