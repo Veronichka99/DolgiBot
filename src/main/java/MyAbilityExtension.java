@@ -7,6 +7,7 @@ import org.telegram.abilitybots.api.util.AbilityExtension;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class MyAbilityExtension implements AbilityExtension {
     private SilentSender silent;
@@ -16,6 +17,23 @@ public class MyAbilityExtension implements AbilityExtension {
     public MyAbilityExtension(SilentSender silent, DBContext db) {
         this.silent = silent;
         this.db = db;
+    }
+
+    private void addingTransaction(Long chatId, Double sum, String name, String comment) {
+        Transaction transaction = new Transaction(sum, comment);
+        for (Person person : usersList) {
+            if (person.getChatId().equals(chatId)) {
+                person.addNewTransaction(transaction, name);
+            }
+        }
+    }
+
+    private String formList (Map<String,Double> map) {
+        String message = "";
+        for (Map.Entry<String, Double> entry : map.entrySet()) {
+            message += String.format("\n%s: %s", entry.getKey(), entry.getValue());
+        }
+        return message;
     }
 
     public Ability start() {
@@ -48,13 +66,8 @@ public class MyAbilityExtension implements AbilityExtension {
                 .locality(Locality.ALL)
                 .privacy(Privacy.PUBLIC)
                 .action(ctx -> {
-                    Transaction transaction = new Transaction(Float.parseFloat(ctx.firstArg()), ctx.thirdArg());
-                    for (Person person : usersList) {
-                        if (person.getChatId().equals(ctx.chatId())) {
-                            person.addNewTransaction(transaction, ctx.secondArg());
-                        }
-                    }
-                    silent.send(String.format("You borrow %s from %s", Math.abs(transaction.getSum()), ctx.secondArg()), ctx.chatId());
+                    addingTransaction(ctx.chatId(), Double.parseDouble(ctx.firstArg()), ctx.secondArg(), ctx.thirdArg());
+                    silent.send(String.format("You borrow %s from %s", ctx.firstArg() , ctx.secondArg()), ctx.chatId());
                 })
                 .build();
     }
@@ -66,13 +79,8 @@ public class MyAbilityExtension implements AbilityExtension {
                 .locality(Locality.ALL)
                 .privacy(Privacy.PUBLIC)
                 .action(ctx -> {
-                    Transaction transaction = new Transaction(-Float.parseFloat(ctx.firstArg()), ctx.thirdArg());
-                    for (Person person : usersList) {
-                        if (person.getChatId().equals(ctx.chatId())) {
-                            person.addNewTransaction(transaction, ctx.secondArg());
-                        }
-                    }
-                    silent.send(String.format("You borrow %s to %s", Math.abs(transaction.getSum()), ctx.secondArg()), ctx.chatId());
+                    addingTransaction(ctx.chatId(), - Double.parseDouble(ctx.firstArg()), ctx.secondArg(), ctx.thirdArg());
+                    silent.send(String.format("You borrow %s to %s", ctx.firstArg() , ctx.secondArg()), ctx.chatId());
                 })
                 .build();
     }
@@ -84,13 +92,8 @@ public class MyAbilityExtension implements AbilityExtension {
                 .locality(Locality.ALL)
                 .privacy(Privacy.PUBLIC)
                 .action(ctx -> {
-                    Transaction transaction = new Transaction(-Float.parseFloat(ctx.firstArg()), ctx.thirdArg());
-                    for (Person person : usersList) {
-                        if (person.getChatId().equals(ctx.chatId())) {
-                            person.addNewTransaction(transaction, ctx.secondArg());
-                        }
-                    }
-                    silent.send(String.format("You pay your %s debt to %s", Math.abs(transaction.getSum()), ctx.secondArg()), ctx.chatId());
+                    addingTransaction(ctx.chatId(), - Double.parseDouble(ctx.firstArg()), ctx.secondArg(), ctx.thirdArg());
+                    silent.send(String.format("You paid %s to %s", ctx.firstArg() , ctx.secondArg()), ctx.chatId());
                 })
                 .build();
     }
@@ -102,13 +105,8 @@ public class MyAbilityExtension implements AbilityExtension {
                 .locality(Locality.ALL)
                 .privacy(Privacy.PUBLIC)
                 .action(ctx -> {
-                    Transaction transaction = new Transaction(Float.parseFloat(ctx.firstArg()), ctx.thirdArg());
-                    for (Person person : usersList) {
-                        if (person.getChatId().equals(ctx.chatId())) {
-                            person.addNewTransaction(transaction, ctx.secondArg());
-                        }
-                    }
-                    silent.send(String.format("You back %s from %s", Math.abs(transaction.getSum()), ctx.secondArg()), ctx.chatId());
+                    addingTransaction(ctx.chatId(), Double.parseDouble(ctx.firstArg()), ctx.secondArg(), ctx.thirdArg());
+                    silent.send(String.format("You back %s from %s", ctx.firstArg() , ctx.secondArg()), ctx.chatId());
                 })
                 .build();
     }
@@ -124,9 +122,7 @@ public class MyAbilityExtension implements AbilityExtension {
                     String message = "All relations:";
                     for (Person person : usersList) {
                         if (person.getChatId().equals(ctx.chatId())) {
-                            for (String key : person.splitBalance().keySet()) {
-                                message += String.format("\n%s: %s", key, person.splitBalance().get(key));
-                            }
+                            message += formList(person.splitBalance());
                             message += String.format("\nYour debt load is %s", person.getBalance());
                         }
                     }
@@ -146,9 +142,7 @@ public class MyAbilityExtension implements AbilityExtension {
                     String message = "Borrowed from:";
                     for (Person person : usersList) {
                         if (person.getChatId().equals(ctx.chatId())) {
-                            for (String key : person.debtsOnly().keySet()) {
-                                message += String.format("\n%s: %s", key, person.debtsOnly().get(key));
-                            }
+                            message += formList(person.debtsOnly());
                             message += String.format("\nYour whole debt is %s", Math.abs(person.getDebt()));
                         }
                     }
@@ -168,9 +162,7 @@ public class MyAbilityExtension implements AbilityExtension {
                     String message = "Borrowed to:";
                     for (Person person : usersList) {
                         if (person.getChatId().equals(ctx.chatId())) {
-                            for (String key : person.borrowedOnly().keySet()) {
-                                message += String.format("\n%s: %s", key, Math.abs(person.borrowedOnly().get(key)));
-                            }
+                            message += formList(person.borrowedOnly());
                             message += String.format("\nYour borrowed to people %s", Math.abs(person.getBorrowed()));
                         }
                     }
@@ -200,7 +192,6 @@ public class MyAbilityExtension implements AbilityExtension {
                                 message += String.format("\n%s owe you %s", ctx.firstArg(),
                                         Math.abs(person.splitBalance().get(ctx.firstArg())));
                             }
-
                         }
                     }
                     silent.send(message, ctx.chatId());

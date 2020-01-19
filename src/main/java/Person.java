@@ -3,10 +3,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Person {
-    private Long chatId;
-    private Map<String, ArrayList<Transaction>> relationships = new HashMap<>();
+    Long chatId;
+    Map<String, ArrayList<Transaction>> relationships = new HashMap<>();
 
-    Person(Long chatId) {
+    public Person(Long chatId) {
         this.chatId = chatId;
     }
 
@@ -28,68 +28,68 @@ public class Person {
         }
     }
 
-    public Map<String, Float> splitBalance() {
-        Map<String, Float> listToFloat = new HashMap<>();
-        for (String key : relationships.keySet()) {
-            Float balance = 0.0F;
-            for (Transaction transaction : relationships.get(key)) {
+    public Map<String, Double> splitBalance() {
+        Map<String, Double> listToDouble = new HashMap<>();
+        for (Map.Entry<String,ArrayList<Transaction>> entry : relationships.entrySet()) {
+            double balance = 0.0;
+            for (Transaction transaction : entry.getValue()) {
                 balance += transaction.getSum();
             }
             if (balance != 0) {
-                listToFloat.put(key, balance);
+                listToDouble.put(entry.getKey(), balance);
             }
         }
-        return listToFloat;
+        return listToDouble;
     }
 
-    public Float getBalance() {
-        Float balance = 0.0F;
-        for (String key : splitBalance().keySet()) {
-            balance += splitBalance().get(key);
+    public Double getBalance() {
+        double balance = 0.0;
+        for (Map.Entry<String, Double> entry : splitBalance().entrySet()) {
+            balance += entry.getValue();
         }
         return balance;
     }
 
-    public Map<String, Float> debtsOnly() {
-        Map<String, Float> listToFloat = new HashMap<>();
-        for (String key : relationships.keySet()) {
-            Float balance = 0.0F;
-            for (Transaction transaction : relationships.get(key)) {
+    public Map<String, Double> debtsOnly() {
+        Map<String, Double> listToDouble = new HashMap<>();
+        for (Map.Entry<String,ArrayList<Transaction>> entry : relationships.entrySet()) {
+            double balance = 0.0;
+            for (Transaction transaction : entry.getValue()) {
                 balance += transaction.getSum();
             }
             if (balance > 0) {
-                listToFloat.put(key, balance);
+                listToDouble.put(entry.getKey(), balance);
             }
         }
-        return listToFloat;
+        return listToDouble;
     }
 
-    public Map<String, Float> borrowedOnly() {
-        Map<String, Float> listToFloat = new HashMap<>();
-        for (String key : relationships.keySet()) {
-            Float balance = 0.0F;
-            for (Transaction transaction : relationships.get(key)) {
+    public Map<String, Double> borrowedOnly() {
+        Map<String, Double> listToDouble = new HashMap<>();
+        for (Map.Entry<String,ArrayList<Transaction>> entry : relationships.entrySet()) {
+            double balance = 0.0;
+            for (Transaction transaction : entry.getValue()) {
                 balance += transaction.getSum();
             }
             if (balance < 0) {
-                listToFloat.put(key, balance);
+                listToDouble.put(entry.getKey(), balance);
             }
         }
-        return listToFloat;
+        return listToDouble;
     }
 
-    public float getDebt() {
-        Float balance = 0.0F;
-        for (String key : debtsOnly().keySet()) {
-            balance += debtsOnly().get(key);
+    public double getDebt() {
+        double balance = 0.0;
+        for (Map.Entry<String, Double> entry : debtsOnly().entrySet()) {
+            balance += entry.getValue();
         }
         return balance;
     }
 
-    public float getBorrowed() {
-        Float balance = 0.0F;
-        for (String key : borrowedOnly().keySet()) {
-            balance += borrowedOnly().get(key);
+    public double getBorrowed() {
+        double balance = 0.0;
+        for (Map.Entry<String, Double> entry : borrowedOnly().entrySet()) {
+            balance += entry.getValue();
         }
         return balance;
     }

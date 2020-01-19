@@ -1,13 +1,13 @@
 public class Transaction {
-    private float sum;
-    private String comment;
+    double sum;
+    String comment;
 
-    Transaction(float sum, String comment) {
+    public Transaction(double sum, String comment) {
         this.sum = sum;
         this.comment = comment;
     }
 
-    public float getSum() {
+    public double getSum() {
         return this.sum;
     }
 
