@@ -1,8 +1,9 @@
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Person {
+public class Person implements Serializable {
     Long chatId;
     Map<String, ArrayList<Transaction>> relationships = new HashMap<>();
 

@@ -12,23 +12,22 @@ import java.util.Map;
 public class MyAbilityExtension implements AbilityExtension {
     private SilentSender silent;
     DBContext db;
-    private List<Person> usersList = new ArrayList<Person>();
+    //private List<Person> usersList = new ArrayList<Person>();
 
     public MyAbilityExtension(SilentSender silent, DBContext db) {
         this.silent = silent;
         this.db = db;
     }
 
-    private void addingTransaction(Long chatId, Double sum, String name, String comment) {
+    private void addingTransaction(Map<Long, Person> userMap, Long chatId,
+                                   Double sum, String name, String comment) {
         Transaction transaction = new Transaction(sum, comment);
-        for (Person person : usersList) {
-            if (person.getChatId().equals(chatId)) {
-                person.addNewTransaction(transaction, name);
-            }
-        }
+        Person person = userMap.get(chatId);
+        person.addNewTransaction(transaction, name);
+        userMap.put(chatId, person);
     }
 
-    private String formList (Map<String,Double> map) {
+    private String formList(Map<String, Double> map) {
         String message = "";
         for (Map.Entry<String, Double> entry : map.entrySet()) {
             message += String.format("\n%s: %s", entry.getKey(), entry.getValue());
@@ -44,8 +43,10 @@ public class MyAbilityExtension implements AbilityExtension {
                 .privacy(Privacy.PUBLIC)
                 .input(0)
                 .action(ctx -> {
+                    Map<Long, Person> userMap = db.getMap("userList");
                     Person person = new Person(ctx.chatId());
-                    usersList.add(person);
+                    userMap.put(ctx.chatId(), person);
+                    //usersList.add(person);
                     silent.send("Hello! This bot helps you to control your debt relations." +
                             "\n\nIf you borrow some money from someone and want to add this transaction send /take+sum of transaction+name of person+short comment" +
                             "\nWhen you pay your date add it with /pay+sum+name+comment" +
@@ -66,8 +67,10 @@ public class MyAbilityExtension implements AbilityExtension {
                 .locality(Locality.ALL)
                 .privacy(Privacy.PUBLIC)
                 .action(ctx -> {
-                    addingTransaction(ctx.chatId(), Double.parseDouble(ctx.firstArg()), ctx.secondArg(), ctx.thirdArg());
-                    silent.send(String.format("You borrow %s from %s", ctx.firstArg() , ctx.secondArg()), ctx.chatId());
+                    Map<Long, Person> userMap = db.getMap("userList");
+                    addingTransaction(userMap, ctx.chatId(), Double.parseDouble(ctx.firstArg()),
+                            ctx.secondArg(), ctx.thirdArg());
+                    silent.send(String.format("You borrow %s from %s", ctx.firstArg(), ctx.secondArg()), ctx.chatId());
                 })
                 .build();
     }
@@ -79,8 +82,10 @@ public class MyAbilityExtension implements AbilityExtension {
                 .locality(Locality.ALL)
                 .privacy(Privacy.PUBLIC)
                 .action(ctx -> {
-                    addingTransaction(ctx.chatId(), - Double.parseDouble(ctx.firstArg()), ctx.secondArg(), ctx.thirdArg());
-                    silent.send(String.format("You borrow %s to %s", ctx.firstArg() , ctx.secondArg()), ctx.chatId());
+                    Map<Long, Person> userMap = db.getMap("userList");
+                    addingTransaction(userMap, ctx.chatId(), -Double.parseDouble(ctx.firstArg()),
+                            ctx.secondArg(), ctx.thirdArg());
+                    silent.send(String.format("You borrow %s to %s", ctx.firstArg(), ctx.secondArg()), ctx.chatId());
                 })
                 .build();
     }
@@ -92,8 +97,10 @@ public class MyAbilityExtension implements AbilityExtension {
                 .locality(Locality.ALL)
                 .privacy(Privacy.PUBLIC)
                 .action(ctx -> {
-                    addingTransaction(ctx.chatId(), - Double.parseDouble(ctx.firstArg()), ctx.secondArg(), ctx.thirdArg());
-                    silent.send(String.format("You paid %s to %s", ctx.firstArg() , ctx.secondArg()), ctx.chatId());
+                    Map<Long, Person> userMap = db.getMap("userList");
+                    addingTransaction(userMap, ctx.chatId(), -Double.parseDouble(ctx.firstArg()),
+                            ctx.secondArg(), ctx.thirdArg());
+                    silent.send(String.format("You paid %s to %s", ctx.firstArg(), ctx.secondArg()), ctx.chatId());
                 })
                 .build();
     }
@@ -105,8 +112,10 @@ public class MyAbilityExtension implements AbilityExtension {
                 .locality(Locality.ALL)
                 .privacy(Privacy.PUBLIC)
                 .action(ctx -> {
-                    addingTransaction(ctx.chatId(), Double.parseDouble(ctx.firstArg()), ctx.secondArg(), ctx.thirdArg());
-                    silent.send(String.format("You back %s from %s", ctx.firstArg() , ctx.secondArg()), ctx.chatId());
+                    Map<Long, Person> userMap = db.getMap("userList");
+                    addingTransaction(userMap, ctx.chatId(), Double.parseDouble(ctx.firstArg()),
+                            ctx.secondArg(), ctx.thirdArg());
+                    silent.send(String.format("You back %s from %s", ctx.firstArg(), ctx.secondArg()), ctx.chatId());
                 })
                 .build();
     }
@@ -119,13 +128,10 @@ public class MyAbilityExtension implements AbilityExtension {
                 .privacy(Privacy.PUBLIC)
                 .input(0)
                 .action(ctx -> {
+                    Map<Long, Person> userMap = db.getMap("userList");
                     String message = "All relations:";
-                    for (Person person : usersList) {
-                        if (person.getChatId().equals(ctx.chatId())) {
-                            message += formList(person.splitBalance());
-                            message += String.format("\nYour debt load is %s", person.getBalance());
-                        }
-                    }
+                    message += formList(userMap.get(ctx.chatId()).splitBalance());
+                    message += String.format("\nYour debt load is %s", userMap.get(ctx.chatId()).getBalance());
                     silent.send(message, ctx.chatId());
                 })
                 .build();
@@ -139,13 +145,10 @@ public class MyAbilityExtension implements AbilityExtension {
                 .privacy(Privacy.PUBLIC)
                 .input(0)
                 .action(ctx -> {
+                    Map<Long, Person> userMap = db.getMap("userList");
                     String message = "Borrowed from:";
-                    for (Person person : usersList) {
-                        if (person.getChatId().equals(ctx.chatId())) {
-                            message += formList(person.debtsOnly());
-                            message += String.format("\nYour whole debt is %s", Math.abs(person.getDebt()));
-                        }
-                    }
+                    message += formList(userMap.get(ctx.chatId()).debtsOnly());
+                    message += String.format("\nYour whole debt is %s", Math.abs(userMap.get(ctx.chatId()).getDebt()));
                     silent.send(message, ctx.chatId());
                 })
                 .build();
@@ -159,13 +162,10 @@ public class MyAbilityExtension implements AbilityExtension {
                 .privacy(Privacy.PUBLIC)
                 .input(0)
                 .action(ctx -> {
+                    Map<Long, Person> userMap = db.getMap("userList");
                     String message = "Borrowed to:";
-                    for (Person person : usersList) {
-                        if (person.getChatId().equals(ctx.chatId())) {
-                            message += formList(person.borrowedOnly());
-                            message += String.format("\nYour borrowed to people %s", Math.abs(person.getBorrowed()));
-                        }
-                    }
+                    message += formList(userMap.get(ctx.chatId()).borrowedOnly());
+                    message += String.format("\nYour borrowed to people %s", Math.abs(userMap.get(ctx.chatId()).getBorrowed()));
                     silent.send(message, ctx.chatId());
                 })
                 .build();
@@ -179,20 +179,17 @@ public class MyAbilityExtension implements AbilityExtension {
                 .privacy(Privacy.PUBLIC)
                 .input(1)
                 .action(ctx -> {
+                    Map<Long, Person> userMap = db.getMap("userList");
                     String message = ctx.firstArg();
-                    for (Person person : usersList) {
-                        if (person.getChatId().equals(ctx.chatId())) {
-                            for (Transaction transaction : person.getRelationships().get(ctx.firstArg())) {
-                                message += String.format("\n%s - %s", transaction.getSum(), transaction.getComment());
-                            }
-                            if (person.splitBalance().get(ctx.firstArg()) > 0) {
-                                message += String.format("\nYou owe %s %s", ctx.firstArg(),
-                                        Math.abs(person.splitBalance().get(ctx.firstArg())));
-                            } else if (person.splitBalance().get(ctx.firstArg()) < 0) {
-                                message += String.format("\n%s owe you %s", ctx.firstArg(),
-                                        Math.abs(person.splitBalance().get(ctx.firstArg())));
-                            }
-                        }
+                    for (Transaction transaction : userMap.get(ctx.chatId()).getRelationships().get(ctx.firstArg())) {
+                        message += String.format("\n%s - %s", transaction.getSum(), transaction.getComment());
+                    }
+                    if (userMap.get(ctx.chatId()).splitBalance().get(ctx.firstArg()) > 0) {
+                        message += String.format("\nYou owe %s %s", ctx.firstArg(),
+                                Math.abs(userMap.get(ctx.chatId()).splitBalance().get(ctx.firstArg())));
+                    } else if (userMap.get(ctx.chatId()).splitBalance().get(ctx.firstArg()) < 0) {
+                        message += String.format("\n%s owe you %s", ctx.firstArg(),
+                                Math.abs(userMap.get(ctx.chatId()).splitBalance().get(ctx.firstArg())));
                     }
                     silent.send(message, ctx.chatId());
                 })
